@@ -1,0 +1,143 @@
+/**
+ * =====================================
+ *         UI DESIGN SYSTEM
+ * =====================================
+ * 
+ * Project: Текстовый Редактор
+ * Type: Text Editor / Rich Text Application
+ * 
+ * DESIGN PHILOSOPHY
+ * -----------------
+ * Core Principle: Professional clarity meets creative flexibility
+ * Design Style: Clean Editorial - inspired by modern writing tools
+ * Emotion Goal: Focus, productivity, and creative confidence
+ * 
+ * COLOR SYSTEM (MUST BE HSL FORMAT)
+ * -------------
+ * Primary: 215 28% 17% - Deep editorial blue for focus
+ * Secondary: 220 9% 46% - Muted gray for balance
+ * Accent: 142 76% 36% - Fresh green for success states
+ * 
+ * TYPOGRAPHY
+ * ----------
+ * Display: Inter for UI elements
+ * Body: System fonts optimized for reading
+ * 
+ * INTERACTIONS
+ * ------------
+ * Transitions: 200ms ease for responsiveness
+ * States: Subtle hover and focus indicators
+ * ====================================
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 215 28% 17%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 9% 96%;
+    --secondary-foreground: 215 28% 17%;
+    --muted: 220 9% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 28% 17%;
+    --chart-1: 142 76% 36%;
+    --chart-2: 215 28% 17%;
+    --chart-3: 47 96% 53%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 0 84% 60%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 215 28% 17%;
+    --sidebar-primary: 215 28% 17%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 9% 96%;
+    --sidebar-accent-foreground: 215 28% 17%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 215 28% 17%;
+  }
+  
+  .dark {
+    --background: 215 28% 8%;
+    --foreground: 0 0% 98%;
+    --card: 215 28% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 215 28% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 215 28% 17%;
+    --secondary: 215 28% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 215 28% 12%;
+    --muted-foreground: 220 9% 64%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 28% 18%;
+    --input: 215 28% 18%;
+    --ring: 0 0% 83%;
+    --chart-1: 142 76% 36%;
+    --chart-2: 215 28% 17%;
+    --chart-3: 47 96% 53%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 0 84% 60%;
+    --sidebar-background: 215 28% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 215 28% 17%;
+    --sidebar-accent: 215 28% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 28% 18%;
+    --sidebar-ring: 215 28% 17%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Editor specific styles */
+.editor-content {
+  min-height: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.editor-content:focus {
+  outline: none;
+  border: none;
+}
+
+.toolbar-button {
+  transition: all 200ms ease;
+}
+
+.toolbar-button:hover {
+  background-color: hsl(var(--accent) / 0.1);
+}
+
+.toolbar-button.active {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
