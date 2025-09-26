@@ -1,0 +1,96 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './package-lock.json'
+        
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+      
+
+      
+    - name: Run tests (if available)
+      run: npm test --if-present
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+        retention-days: 5
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        tags: text-editor:latest
+        load: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Test Docker image
+      run: |
+        docker run --rm text-editor:latest ls -la /app/dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+        
+    # Добавьте шаги для деплоя на ваш хостинг
+    # Например, для Vercel, Netlify, или собственного сервера
+    - name: Deploy to production
+      run: |
+        echo "Add your deployment steps here"
+        # Пример для Vercel:
+        # npm install -g vercel
+        # vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
