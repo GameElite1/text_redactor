@@ -1,10 +1,27 @@
 import { useRef, useEffect } from "react";
 import { useEditorStore } from "@/store/editor-store";
+import { useFormattingStore } from "@/store/formatting-store";
 import { Textarea } from "@/components/ui/textarea";
 
 export function TextEditor() {
   const { content, setContent, updateStats } = useEditorStore();
+  const { fontSize, fontFamily, textColor } = useFormattingStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Маппинг значений fontFamily к CSS font-family
+  const getFontFamily = (family: string) => {
+    const fontMap: Record<string, string> = {
+      'system': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'arial': 'Arial, sans-serif',
+      'helvetica': 'Helvetica, Arial, sans-serif',
+      'times': 'Times, "Times New Roman", serif',
+      'georgia': 'Georgia, serif',
+      'courier': '"Courier New", Courier, monospace',
+      'verdana': 'Verdana, sans-serif',
+      'trebuchet': '"Trebuchet MS", sans-serif',
+    };
+    return fontMap[family] || fontMap.system;
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -56,9 +73,10 @@ export function TextEditor() {
         placeholder="Начните писать..."
         className="flex-1 min-h-[500px] resize-none editor-content border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none"
         style={{
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-          fontSize: '16px',
+          fontFamily: getFontFamily(fontFamily),
+          fontSize: fontSize,
           lineHeight: '1.6',
+          color: textColor,
         }}
       />
     </div>

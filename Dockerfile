@@ -1,3 +1,4 @@
+
 FROM node:18-alpine
 
 WORKDIR /app
@@ -18,3 +19,4 @@ EXPOSE 3000
 
 # Запускаем сервер
 CMD ["serve", "-s", "dist", "-l", "3000"]
+

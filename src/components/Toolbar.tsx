@@ -10,7 +10,10 @@ import {
   RotateCw,
   Eye,
   FileDown,
-  Settings
+  Settings,
+  Search,
+  Type,
+  CheckCircle
 } from "lucide-react";
 import { useEditorStore } from "@/store/editor-store";
 import { useToast } from "@/hooks/use-toast";
@@ -20,13 +23,25 @@ interface ToolbarProps {
   onSaveDocument: () => void;
   onLoadDocument: () => void;
   onDownloadDocument: () => void;
+  onToggleSearch: () => void;
+  onToggleFormatting: () => void;
+  onToggleSpellCheck: () => void;
+  isSearchOpen: boolean;
+  isFormattingOpen: boolean;
+  isSpellCheckEnabled: boolean;
 }
 
 export function Toolbar({ 
   onNewDocument, 
   onSaveDocument, 
   onLoadDocument, 
-  onDownloadDocument 
+  onDownloadDocument,
+  onToggleSearch,
+  onToggleFormatting,
+  onToggleSpellCheck,
+  isSearchOpen,
+  isFormattingOpen,
+  isSpellCheckEnabled
 }: ToolbarProps) {
   const { fileName, setFileName, isModified } = useEditorStore();
   const { toast } = useToast();
@@ -122,6 +137,39 @@ export function Toolbar({
           title="Повторить"
         >
           <RotateCw className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* Text tools */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleSearch}
+          className={`toolbar-button ${isSearchOpen ? 'bg-accent text-accent-foreground' : ''}`}
+          title="Поиск и замена"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleFormatting}
+          className={`toolbar-button ${isFormattingOpen ? 'bg-accent text-accent-foreground' : ''}`}
+          title="Форматирование текста"
+        >
+          <Type className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleSpellCheck}
+          className={`toolbar-button ${isSpellCheckEnabled ? 'bg-accent text-accent-foreground' : ''}`}
+          title="Проверка орфографии"
+        >
+          <CheckCircle className="h-4 w-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-6" />

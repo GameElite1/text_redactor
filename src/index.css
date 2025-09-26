@@ -141,3 +141,39 @@
   background-color: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
 }
+
+/* Search highlighting */
+mark {
+  border-radius: 3px;
+  padding: 1px 2px;
+}
+
+/* Formatting toolbar styles */
+.formatting-toolbar {
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Spell checker styles */
+.spelling-error {
+  border-bottom: 2px wavy #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Custom scrollbar for spell checker panel */
+.spell-checker-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.spell-checker-panel::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.spell-checker-panel::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+.spell-checker-panel::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
