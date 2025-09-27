@@ -1,5 +1,4 @@
 [![Build and Test](https://github.com/GameElite1/text_redactor/actions/workflows/npm-grunt.yml/badge.svg)](https://github.com/GameElite1/text_redactor/actions/workflows/npm-grunt.yml)
-# This file is only for editing file nodes, do not break the structure
 ## Project Description
 Расширенный текстовый редактор с функциями форматирования, поиска, проверки орфографии и полноценной системой безопасности. Профессиональный инструмент для создания и редактирования текстовых документов с административной панелью и управлением пользователями.
 
