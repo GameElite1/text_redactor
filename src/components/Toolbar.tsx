@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { 
   FileText, 
   Save, 
@@ -13,9 +14,14 @@ import {
   Settings,
   Search,
   Type,
-  CheckCircle
+  CheckCircle,
+  Shield,
+  LogOut,
+  User
 } from "lucide-react";
 import { useEditorStore } from "@/store/editor-store";
+import { useAuthStore } from "@/store/auth-store";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface ToolbarProps {
@@ -26,9 +32,10 @@ interface ToolbarProps {
   onToggleSearch: () => void;
   onToggleFormatting: () => void;
   onToggleSpellCheck: () => void;
+  onToggleSecurity?: () => void;
   isSearchOpen: boolean;
   isFormattingOpen: boolean;
-  isSpellCheckEnabled: boolean;
+  isSpellCheckOpen: boolean;
 }
 
 export function Toolbar({ 
@@ -39,11 +46,14 @@ export function Toolbar({
   onToggleSearch,
   onToggleFormatting,
   onToggleSpellCheck,
+  onToggleSecurity,
   isSearchOpen,
   isFormattingOpen,
-  isSpellCheckEnabled
+  isSpellCheckOpen
 }: ToolbarProps) {
   const { fileName, setFileName, isModified } = useEditorStore();
+  const { user, isAdmin } = useAuthStore();
+  const { logout } = useAuth();
   const { toast } = useToast();
 
   const handleFileNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,7 +176,7 @@ export function Toolbar({
           size="sm"
           variant="ghost"
           onClick={onToggleSpellCheck}
-          className={`toolbar-button ${isSpellCheckEnabled ? 'bg-accent text-accent-foreground' : ''}`}
+          className={`toolbar-button ${isSpellCheckOpen ? 'bg-accent text-accent-foreground' : ''}`}
           title="Проверка орфографии"
         >
           <CheckCircle className="h-4 w-4" />
@@ -185,6 +195,18 @@ export function Toolbar({
           <Eye className="h-4 w-4" />
         </Button>
         
+        {onToggleSecurity && isAdmin && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onToggleSecurity}
+            className="toolbar-button text-purple-600 hover:bg-purple-50"
+            title="Панель администратора"
+          >
+            <Shield className="h-4 w-4" />
+          </Button>
+        )}
+        
         <Button
           size="sm"
           variant="ghost"
@@ -196,17 +218,45 @@ export function Toolbar({
         </Button>
       </div>
 
-      {/* File name input */}
-      <div className="flex items-center gap-2">
-        <Input
-          value={fileName}
-          onChange={handleFileNameChange}
-          className="w-64 h-8 text-sm"
-          placeholder="Название файла"
-        />
-        {isModified && (
-          <span className="text-xs text-muted-foreground">•</span>
-        )}
+      {/* User info and file name */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Input
+            value={fileName}
+            onChange={handleFileNameChange}
+            className="w-64 h-8 text-sm"
+            placeholder="Название файла"
+          />
+          {isModified && (
+            <span className="text-xs text-muted-foreground">•</span>
+          )}
+        </div>
+
+        {/* User info */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
+            <User className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              {user?.name || user?.email?.split('@')[0] || 'Пользователь'}
+            </span>
+            <Badge 
+              variant={isAdmin ? "default" : "outline"} 
+              className={`text-xs ${isAdmin ? 'bg-purple-600 text-white' : ''}`}
+            >
+              {isAdmin ? 'Администратор' : 'Пользователь'}
+            </Badge>
+          </div>
+          
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={logout}
+            className="toolbar-button text-destructive hover:bg-destructive/10"
+            title="Выйти из системы"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

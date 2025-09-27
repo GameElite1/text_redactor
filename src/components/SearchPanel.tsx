@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, X, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
@@ -7,9 +7,10 @@ import { useEditorStore } from '@/store/editor-store';
 interface SearchPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onSearch: (term: string, currentIndex: number) => void;
 }
 
-export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
+export function SearchPanel({ isOpen, onClose, onSearch }: SearchPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [replaceTerm, setReplaceTerm] = useState('');
   const [showReplace, setShowReplace] = useState(false);
@@ -23,60 +24,63 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     if (!term) return [];
     
     const flags = caseSensitive ? 'g' : 'gi';
-    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
-    const matches = [];
-    let match;
-    
-    while ((match = regex.exec(text)) !== null) {
-      matches.push({
-        start: match.index,
-        end: match.index + match[0].length,
-        text: match[0]
-      });
+    try {
+      const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+      const matches = [];
+      let match;
+      
+      while ((match = regex.exec(text)) !== null) {
+        matches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0]
+        });
+        // Предотвращаем бесконечный цикл для пустых совпадений
+        if (match.index === regex.lastIndex) {
+          regex.lastIndex++;
+        }
+      }
+      
+      return matches;
+    } catch (error) {
+      console.error('Ошибка в регулярном выражении:', error);
+      return [];
     }
-    
-    return matches;
   }, [caseSensitive]);
 
-  const highlightText = useCallback((text: string, term: string, currentIndex: number) => {
-    if (!term) return text;
-    
-    const matches = findMatches(text, term);
-    setTotalMatches(matches.length);
-    
-    if (matches.length === 0) return text;
-    
-    let result = '';
-    let lastIndex = 0;
-    
-    matches.forEach((match, index) => {
-      result += text.slice(lastIndex, match.start);
-      const isCurrentMatch = index === currentIndex;
-      result += `<mark class="${isCurrentMatch ? 'bg-accent text-accent-foreground' : 'bg-yellow-200 text-yellow-900'}">${match.text}</mark>`;
-      lastIndex = match.end;
-    });
-    
-    result += text.slice(lastIndex);
-    return result;
-  }, [findMatches]);
-
   const handleSearch = useCallback(() => {
+    if (!searchTerm) {
+      setTotalMatches(0);
+      setCurrentMatch(0);
+      onSearch('', 0);
+      return;
+    }
+
     const matches = findMatches(content, searchTerm);
     setTotalMatches(matches.length);
+    
     if (matches.length > 0) {
       setCurrentMatch(0);
+      onSearch(searchTerm, 0);
+    } else {
+      setCurrentMatch(0);
+      onSearch(searchTerm, 0);
     }
-  }, [content, searchTerm, findMatches]);
+  }, [content, searchTerm, findMatches, onSearch]);
 
   const navigateMatch = useCallback((direction: 'next' | 'prev') => {
     if (totalMatches === 0) return;
     
+    let newIndex;
     if (direction === 'next') {
-      setCurrentMatch((prev) => (prev + 1) % totalMatches);
+      newIndex = (currentMatch + 1) % totalMatches;
     } else {
-      setCurrentMatch((prev) => (prev - 1 + totalMatches) % totalMatches);
+      newIndex = (currentMatch - 1 + totalMatches) % totalMatches;
     }
-  }, [totalMatches]);
+    
+    setCurrentMatch(newIndex);
+    onSearch(searchTerm, newIndex);
+  }, [totalMatches, currentMatch, searchTerm, onSearch]);
 
   const handleReplace = useCallback(() => {
     if (!searchTerm || totalMatches === 0) return;
@@ -91,29 +95,46 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
       content.slice(match.end);
     
     setContent(newContent);
-    handleSearch();
+    
+    // Обновляем поиск после замены
+    setTimeout(() => {
+      handleSearch();
+    }, 100);
   }, [content, searchTerm, replaceTerm, currentMatch, findMatches, setContent, handleSearch]);
 
   const handleReplaceAll = useCallback(() => {
     if (!searchTerm) return;
     
     const flags = caseSensitive ? 'g' : 'gi';
-    const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
-    const newContent = content.replace(regex, replaceTerm);
-    
-    setContent(newContent);
-    setTotalMatches(0);
-    setCurrentMatch(0);
-  }, [content, searchTerm, replaceTerm, caseSensitive, setContent]);
-
-  React.useEffect(() => {
-    if (searchTerm) {
-      handleSearch();
-    } else {
+    try {
+      const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+      const newContent = content.replace(regex, replaceTerm);
+      
+      setContent(newContent);
       setTotalMatches(0);
       setCurrentMatch(0);
+      onSearch('', 0);
+    } catch (error) {
+      console.error('Ошибка при замене:', error);
     }
-  }, [searchTerm, handleSearch]);
+  }, [content, searchTerm, replaceTerm, caseSensitive, setContent, onSearch]);
+
+  // Обновляем поиск при изменении параметров
+  useEffect(() => {
+    handleSearch();
+  }, [searchTerm, caseSensitive, handleSearch]);
+
+  // Сброс при закрытии панели
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+      setReplaceTerm('');
+      setShowReplace(false);
+      setCurrentMatch(0);
+      setTotalMatches(0);
+      onSearch('', 0);
+    }
+  }, [isOpen, onSearch]);
 
   if (!isOpen) return null;
 
@@ -136,11 +157,16 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             className="pl-10"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 navigateMatch('next');
               } else if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
                 navigateMatch('prev');
+              } else if (e.key === 'Escape') {
+                onClose();
               }
             }}
+            autoFocus
           />
         </div>
         
@@ -150,6 +176,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             size="sm" 
             onClick={() => navigateMatch('prev')}
             disabled={totalMatches === 0}
+            title="Предыдущее совпадение (Shift+Enter)"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
@@ -158,10 +185,11 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             size="sm" 
             onClick={() => navigateMatch('next')}
             disabled={totalMatches === 0}
+            title="Следующее совпадение (Enter)"
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground px-2">
+          <span className="text-sm text-muted-foreground px-2 min-w-[50px] text-center">
             {totalMatches > 0 ? `${currentMatch + 1}/${totalMatches}` : '0/0'}
           </span>
         </div>
@@ -171,6 +199,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
           size="sm"
           onClick={() => setShowReplace(!showReplace)}
           className={showReplace ? 'bg-accent text-accent-foreground' : ''}
+          title="Показать замену"
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
@@ -183,12 +212,19 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             value={replaceTerm}
             onChange={(e) => setReplaceTerm(e.target.value)}
             className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleReplace();
+              }
+            }}
           />
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleReplace}
             disabled={totalMatches === 0}
+            title="Заменить текущее совпадение"
           >
             Заменить
           </Button>
@@ -197,6 +233,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             size="sm" 
             onClick={handleReplaceAll}
             disabled={totalMatches === 0}
+            title="Заменить все совпадения"
           >
             Заменить всё
           </Button>
@@ -204,7 +241,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
             type="checkbox"
             checked={caseSensitive}
@@ -213,6 +250,12 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
           />
           Учитывать регистр
         </label>
+        
+        {searchTerm && totalMatches === 0 && (
+          <span className="text-sm text-muted-foreground">
+            Совпадений не найдено
+          </span>
+        )}
       </div>
     </div>
   );
