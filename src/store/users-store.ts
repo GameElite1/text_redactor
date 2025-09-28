@@ -60,51 +60,62 @@ const INITIAL_USERS: AppUser[] = [
 
 export const useUsersStore = create<UsersState>()(
   persist(
-    (set, get) => ({
-      users: INITIAL_USERS,
-      isLoading: false,
+    (set, get) => {
+      // Слушатель изменений паролей
+      if (typeof window !== 'undefined') {
+        window.addEventListener('user-password-changed', ((event: CustomEvent) => {
+          const { username, newPassword } = event.detail;
+          console.log(`Пароль изменён для пользователя: ${username}`);
+          // Дополнительно можно обновить время последнего изменения пароля
+        }) as EventListener);
+      }
 
-      addUser: (userData) => {
-        const newUser: AppUser = {
-          ...userData,
-          id: `user-${Date.now()}`,
-          createdAt: Date.now(),
-        };
-        
-        set(state => ({
-          users: [...state.users, newUser]
-        }));
-      },
+      return {
+        users: INITIAL_USERS,
+        isLoading: false,
 
-      updateUser: (id, updates) => {
-        set(state => ({
-          users: state.users.map(user =>
-            user.id === id ? { ...user, ...updates } : user
-          )
-        }));
-      },
+        addUser: (userData) => {
+          const newUser: AppUser = {
+            ...userData,
+            id: `user-${Date.now()}`,
+            createdAt: Date.now(),
+          };
+          
+          set(state => ({
+            users: [...state.users, newUser]
+          }));
+        },
 
-      deleteUser: (id) => {
-        set(state => ({
-          users: state.users.filter(user => user.id !== id)
-        }));
-      },
+        updateUser: (id, updates) => {
+          set(state => ({
+            users: state.users.map(user =>
+              user.id === id ? { ...user, ...updates } : user
+            )
+          }));
+        },
 
-      toggleUserStatus: (id) => {
-        set(state => ({
-          users: state.users.map(user =>
-            user.id === id ? { ...user, isActive: !user.isActive } : user
-          )
-        }));
-      },
+        deleteUser: (id) => {
+          set(state => ({
+            users: state.users.filter(user => user.id !== id)
+          }));
+        },
 
-      loadUsers: () => {
-        // В реальном приложении здесь был бы API вызов
-        set({ isLoading: false });
-      },
+        toggleUserStatus: (id) => {
+          set(state => ({
+            users: state.users.map(user =>
+              user.id === id ? { ...user, isActive: !user.isActive } : user
+            )
+          }));
+        },
 
-      setLoading: (loading) => set({ isLoading: loading }),
-    }),
+        loadUsers: () => {
+          // В реальном приложении здесь был бы API вызов
+          set({ isLoading: false });
+        },
+
+        setLoading: (loading) => set({ isLoading: loading }),
+      };
+    },
     {
       name: 'users-store',
     }

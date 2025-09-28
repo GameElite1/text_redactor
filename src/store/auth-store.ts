@@ -24,19 +24,60 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   checkAuthStatus: () => boolean;
   loginWithCredentials: (username: string, password: string) => Promise<boolean>;
-  loginWithEmail: (email: string) => Promise<void>;
 }
 
-// Локальные пользователи для демонстрации
-const LOCAL_USERS = [
+// Типизация локального пользователя
+interface LocalUser {
+  id: string;
+  username: string;
+  password: string;
+  role: 'admin' | 'user';
+  name: string;
+  email: string;
+}
+
+// Локальные пользователи для демонстрации (будут дополняться через админ панель)
+let LOCAL_USERS: LocalUser[] = [
   {
+    id: 'admin-1',
     username: 'admin',
     password: 'admin',
-    role: 'admin' as const,
+    role: 'admin',
     name: 'Администратор',
     email: 'admin@texteditor.com'
   }
 ];
+
+// Функция для добавления нового пользователя
+export const addLocalUser = (user: { username: string; password: string; name: string; email: string; role: 'admin' | 'user' }): LocalUser => {
+  const newUser: LocalUser = {
+    id: `user-${Date.now()}`,
+    username: user.username,
+    password: user.password,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  };
+  LOCAL_USERS.push(newUser);
+  return newUser;
+};
+
+// Функция для изменения пароля пользователя
+export const changeUserPassword = (username: string, newPassword: string): boolean => {
+  const userIndex = LOCAL_USERS.findIndex(u => u.username === username);
+  if (userIndex !== -1) {
+    LOCAL_USERS[userIndex].password = newPassword;
+    // Уведомляем users-store об изменении
+    window.dispatchEvent(new CustomEvent('user-password-changed', { 
+      detail: { username, newPassword } 
+    }));
+    return true;
+  }
+  return false;
+};
+
+// Функция для получения пользователей
+export const getLocalUsers = (): LocalUser[] => [...LOCAL_USERS];
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -116,31 +157,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      loginWithEmail: async (email: string) => {
-        set({ isLoading: true });
-        
-        try {
-          // Эмуляция email авторизации для обычных пользователей
-          const sessionId = `email-${Date.now()}`;
-          const user: User = {
-            projectId: 'email',
-            uid: `email-${email}`,
-            name: email.split('@')[0],
-            email: email,
-            role: 'user',
-            createdTime: Date.now(),
-            lastLoginTime: Date.now(),
-          };
-          
-          localStorage.setItem('text-editor-session', sessionId);
-          get().setUser(user, sessionId);
-        } catch (error) {
-          console.error('Email login error:', error);
-          throw error;
-        } finally {
-          set({ isLoading: false });
-        }
-      },
+
     }),
     {
       name: 'auth-store',

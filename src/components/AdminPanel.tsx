@@ -19,29 +19,50 @@ import {
   Calendar,
   Clock,
   Mail,
-  User
+  User,
+  Key,
+  Lock
 } from 'lucide-react';
 import { useUsersStore, type AppUser } from '@/store/users-store';
+import { changeUserPassword, getLocalUsers, addLocalUser } from '@/store/auth-store';
 
 export const AdminPanel: React.FC = () => {
   const { users, addUser, updateUser, deleteUser, toggleUserStatus, isLoading } = useUsersStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [passwordChangeUser, setPasswordChangeUser] = useState<AppUser | null>(null);
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
     name: '',
     role: 'user' as 'admin' | 'user',
     isActive: true,
+    password: '',
+    confirmPassword: '',
+  });
+  const [passwordData, setPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const handleAddUser = () => {
     setError('');
     
     // Валидация
-    if (!newUser.username || !newUser.email || !newUser.name) {
+    if (!newUser.username || !newUser.email || !newUser.name || !newUser.password || !newUser.confirmPassword) {
       setError('Пожалуйста, заполните все обязательные поля');
+      return;
+    }
+    
+    if (newUser.password.length < 3) {
+      setError('Пароль должен содержать минимум 3 символа');
+      return;
+    }
+    
+    if (newUser.password !== newUser.confirmPassword) {
+      setError('Пароли не совпадают');
       return;
     }
     
@@ -60,7 +81,34 @@ export const AdminPanel: React.FC = () => {
       return;
     }
     
-    addUser(newUser);
+    // Проверяем среди локальных пользователей
+    const localUsers = getLocalUsers();
+    const existingLocalUser = localUsers.find(u => 
+      u.username === newUser.username || u.email === newUser.email
+    );
+    
+    if (existingLocalUser) {
+      setError('Пользователь с таким именем или email уже существует в системе');
+      return;
+    }
+    
+    // Добавляем пользователя в локальную систему авторизации
+    const localUser = addLocalUser({
+      username: newUser.username,
+      password: newUser.password,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
+    });
+    
+    // Добавляем пользователя в UI систему
+    addUser({
+      username: newUser.username,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+      isActive: newUser.isActive
+    });
     
     // Сброс формы
     setNewUser({
@@ -69,6 +117,8 @@ export const AdminPanel: React.FC = () => {
       name: '',
       role: 'user',
       isActive: true,
+      password: '',
+      confirmPassword: '',
     });
     setIsAddDialogOpen(false);
   };
@@ -81,6 +131,8 @@ export const AdminPanel: React.FC = () => {
       name: user.name,
       role: user.role,
       isActive: user.isActive,
+      password: '',
+      confirmPassword: '',
     });
   };
 
@@ -120,7 +172,45 @@ export const AdminPanel: React.FC = () => {
       name: '',
       role: 'user',
       isActive: true,
+      password: '',
+      confirmPassword: '',
     });
+  };
+
+  const handlePasswordChange = () => {
+    if (!passwordChangeUser) return;
+    
+    setPasswordError('');
+    
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('Пожалуйста, заполните все поля');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 3) {
+      setPasswordError('Пароль должен содержать минимум 3 символа');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Пароли не совпадают');
+      return;
+    }
+    
+    // Изменяем пароль в локальной системе
+    const success = changeUserPassword(passwordChangeUser.username, passwordData.newPassword);
+    
+    if (success) {
+      // Сброс формы
+      setPasswordChangeUser(null);
+      setPasswordData({
+        newPassword: '',
+        confirmPassword: '',
+      });
+      alert('Пароль успешно изменён');
+    } else {
+      setPasswordError('Не удалось изменить пароль');
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -248,6 +338,36 @@ export const AdminPanel: React.FC = () => {
                     </Select>
                   </div>
                   
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Пароль *</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Введите пароль"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Подтвердите пароль *</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Подтвердите пароль"
+                        value={newUser.confirmPassword}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
                   {error && (
                     <Alert className="border-red-200 bg-red-50">
                       <AlertDescription className="text-red-700">
@@ -330,13 +450,23 @@ export const AdminPanel: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditUser(user)}
+                        title="Редактировать пользователя"
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setPasswordChangeUser(user)}
+                        title="Изменить пароль"
+                      >
+                        <Key className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => toggleUserStatus(user.id)}
+                        title={user.isActive ? 'Деактивировать' : 'Активировать'}
                       >
                         {user.isActive ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                       </Button>
@@ -345,6 +475,7 @@ export const AdminPanel: React.FC = () => {
                         size="sm"
                         onClick={() => deleteUser(user.id)}
                         className="text-red-600 hover:text-red-700"
+                        title="Удалить пользователя"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -435,6 +566,74 @@ export const AdminPanel: React.FC = () => {
             </Button>
             <Button onClick={handleUpdateUser}>
               Сохранить изменения
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Диалог изменения пароля */}
+      <Dialog open={!!passwordChangeUser} onOpenChange={(open) => !open && setPasswordChangeUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Изменить пароль
+            </DialogTitle>
+            <DialogDescription>
+              Изменить пароль для пользователя: <strong>{passwordChangeUser?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Новый пароль *</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Введите новый пароль"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Подтвердите пароль *</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="Подтвердите новый пароль"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {passwordError && (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertDescription className="text-red-700">
+                  {passwordError}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setPasswordChangeUser(null);
+              setPasswordData({ newPassword: '', confirmPassword: '' });
+              setPasswordError('');
+            }}>
+              Отмена
+            </Button>
+            <Button onClick={handlePasswordChange}>
+              Изменить пароль
             </Button>
           </DialogFooter>
         </DialogContent>

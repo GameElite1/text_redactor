@@ -21,14 +21,13 @@ export function FormattingToolbar({ isOpen }: FormattingToolbarProps) {
   } = useFormattingStore();
 
   const fontFamilies = [
-    { value: 'system', label: 'System Default' },
-    { value: 'arial', label: 'Arial' },
-    { value: 'helvetica', label: 'Helvetica' },
-    { value: 'times', label: 'Times New Roman' },
-    { value: 'georgia', label: 'Georgia' },
-    { value: 'courier', label: 'Courier New' },
-    { value: 'verdana', label: 'Verdana' },
-    { value: 'trebuchet', label: 'Trebuchet MS' },
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Helvetica', label: 'Helvetica' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Georgia', label: 'Georgia' },
+    { value: 'Courier New', label: 'Courier New' },
+    { value: 'Verdana', label: 'Verdana' },
+    { value: 'Trebuchet MS', label: 'Trebuchet MS' },
   ];
 
   const predefinedColors = [
@@ -58,6 +57,27 @@ export function FormattingToolbar({ isOpen }: FormattingToolbarProps) {
     }
   };
 
+  const handleFontFamilyChange = (fontFamily: string) => {
+    setFontFamily(fontFamily);
+    
+    // Применяем шрифт к выделенному тексту через редактор
+    const editorFormatting = (window as any).editorFormatting;
+    if (editorFormatting?.applyFontFamily) {
+      editorFormatting.applyFontFamily(fontFamily);
+    }
+  };
+
+  const handleFontSizeChange = (size: string) => {
+    const fontSize = `${size}px`;
+    setFontSize(fontSize);
+    
+    // Применяем размер к выделенному тексту через редактор
+    const editorFormatting = (window as any).editorFormatting;
+    if (editorFormatting?.applyFontSize) {
+      editorFormatting.applyFontSize(fontSize);
+    }
+  };
+
   const handleColorChange = (color: string) => {
     setTextColor(color);
     
@@ -76,7 +96,7 @@ export function FormattingToolbar({ isOpen }: FormattingToolbarProps) {
         {/* Выбор шрифта */}
         <div className="flex items-center gap-2">
           <Label className="text-sm font-medium">Шрифт:</Label>
-          <Select value={fontFamily} onValueChange={setFontFamily}>
+          <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -98,7 +118,7 @@ export function FormattingToolbar({ isOpen }: FormattingToolbarProps) {
             min="8"
             max="72"
             value={parseInt(fontSize)}
-            onChange={(e) => setFontSize(`${e.target.value}px`)}
+            onChange={(e) => handleFontSizeChange(e.target.value)}
             className="w-16"
           />
         </div>

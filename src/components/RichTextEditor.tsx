@@ -228,14 +228,101 @@ export function RichTextEditor({ searchTerm = '', currentSearchIndex = 0 }: Rich
     }
   }, [applyFormatting]);
 
+  // Применение шрифта к выделенному тексту
+  const applyFontFamily = useCallback((fontFamily: string) => {
+    if (!editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) return; // Нет выделения
+
+    // Создаем span с нужным шрифтом
+    const span = document.createElement('span');
+    span.style.fontFamily = fontFamily;
+    
+    try {
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+    } catch (error) {
+      // Если не удается обернуть, используем execCommand
+      document.execCommand('fontName', false, fontFamily);
+    }
+    
+    // Обновляем контент
+    const textContent = editorRef.current.innerText || '';
+    setContent(textContent);
+    updateStats(textContent);
+  }, [setContent, updateStats]);
+
+  // Применение размера шрифта к выделенному тексту
+  const applyFontSize = useCallback((fontSize: string) => {
+    if (!editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      alert('Пожалуйста, выделите текст для изменения размера шрифта');
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) {
+      alert('Пожалуйста, выделите текст для изменения размера шрифта');
+      return;
+    }
+
+    const caretPosition = saveCaretPosition();
+
+    // Создаем span с нужным размером
+    const span = document.createElement('span');
+    span.style.fontSize = fontSize;
+    
+    try {
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+      // Очищаем выделение
+      selection.removeAllRanges();
+      
+    } catch (error) {
+      console.error('Ошибка применения размера шрифта:', error);
+      // Fallback: используем execCommand если поддерживается
+      try {
+        document.execCommand('fontSize', false, '7');
+        // Затем корректируем размер
+        const fontElements = editorRef.current.querySelectorAll('font[size="7"]');
+        fontElements.forEach(el => {
+          (el as HTMLElement).style.fontSize = fontSize;
+          el.removeAttribute('size');
+        });
+      } catch (cmdError) {
+        alert('Не удалось применить размер шрифта к выделенному тексту');
+      }
+    }
+    
+    // Обновляем контент
+    const textContent = editorRef.current.innerText || '';
+    setContent(textContent);
+    updateStats(textContent);
+    
+    // Восстанавливаем позицию курсора
+    setTimeout(() => {
+      if (caretPosition) restoreCaretPosition(caretPosition);
+    }, 10);
+  }, [setContent, updateStats, saveCaretPosition, restoreCaretPosition]);
+
   // Экспорт методов форматирования для FormattingToolbar
   useEffect(() => {
     (window as any).editorFormatting = {
       applyBold: () => applyFormatting('bold'),
       applyItalic: () => applyFormatting('italic'),
       applyUnderline: () => applyFormatting('underline'),
+      applyFontFamily: applyFontFamily,
+      applyFontSize: applyFontSize,
     };
-  }, [applyFormatting]);
+  }, [applyFormatting, applyFontFamily, applyFontSize]);
 
   // Инициализация контента только при первой загрузке
   useEffect(() => {

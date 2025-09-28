@@ -119,9 +119,13 @@ export function SearchPanel({ isOpen, onClose, onSearch }: SearchPanelProps) {
     }
   }, [content, searchTerm, replaceTerm, caseSensitive, setContent, onSearch]);
 
-  // Обновляем поиск при изменении параметров
+  // Обновляем поиск при изменении параметров с задержкой, чтобы не сбрасывать фокус
   useEffect(() => {
-    handleSearch();
+    const debounceTimeout = setTimeout(() => {
+      handleSearch();
+    }, 300); // Добавляем задержку для предотвращения частых обновлений
+    
+    return () => clearTimeout(debounceTimeout);
   }, [searchTerm, caseSensitive, handleSearch]);
 
   // Сброс при закрытии панели
